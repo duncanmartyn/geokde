@@ -1,10 +1,8 @@
-from typing import Callable
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from _kernels import (
+from geokde._kernels import (
     epanechnikov_raw,
     epanechnikov_scaled,
     quartic_raw,
@@ -193,18 +191,18 @@ def calculate_kde(
     array : numpy.ndarray
         Array to which KDE values will be added.
     kernel : str
-        Kernel function with which to perform KDE.
+        Kernel with which to perform KDE.
     scale : bool
         Whether to calculate raw or scaled KDE values.
     """
-    kernel_funcs = {
+    kernel_vfuncs = {
         "epanechnikov": epanechnikov_scaled if scale else epanechnikov_raw,
         "quartic": quartic_scaled if scale else quartic_raw,
         "triweight": triweight_scaled if scale else triweight_raw,
     }
     # challenge to vectorise as needs to operate on >1 array element
     for point in points:
-        add_point_kde(*point, array, kernel_funcs[kernel])
+        add_point_kde(*point, array, kernel_vfuncs[kernel])
 
 
 def add_point_kde(
@@ -213,7 +211,7 @@ def add_point_kde(
         window: float,
         weight: int | float,
         array: np.ndarray,
-        kernel_func: Callable,
+        kernel_vfunc: np.vectorize,
 ) -> None:
     """Perform KDE for a given point, window, and weight, adding the result to an array.
 
@@ -229,8 +227,8 @@ def add_point_kde(
         Value with which the KDE value for a point will be weighted.
     array : numpy.ndarray
         Array to which KDE values will be added.
-    kernel_func : typing.Callable
-        Kernel function with which to perform KDE.
+    kernel_vfunc : numpy.vectorize
+        Vectorised kernel function with which to perform KDE.
     """
     minx = round(x - window)
     miny = round(y - window)
@@ -238,6 +236,5 @@ def add_point_kde(
     maxy = round(y + window)
     y_idx, x_idx = np.ogrid[miny + .5:maxy + .5, minx + .5:maxx + .5]
     dist_array = np.sqrt(pow(x_idx - x, 2) + pow(y_idx - y, 2))
-    dist_array[dist_array >= window] = 0.0
-    kde_array = kernel_func(dist_array, window, weight)
+    kde_array = kernel_vfunc(dist_array, window, weight)
     array[miny:maxy, minx:maxx] += kde_array

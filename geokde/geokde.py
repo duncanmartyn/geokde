@@ -1,17 +1,17 @@
 import geopandas as gpd
 import numpy as np
 
-from _utils import (
+from geokde._kernels import VALID_KERNELS
+from geokde._utils import (
     adjust_bounds,
     calculate_kde,
     create_array,
     get_points,
     validate_transform,
 )
-from _kernels import VALID_KERNELS
 
 
-def kernel_density_estimation(
+def kde(
         points: gpd.GeoDataFrame | gpd.GeoSeries,
         radius: int | float | str,
         resolution: int | float,
@@ -51,20 +51,50 @@ def kernel_density_estimation(
     bounds : list[int | float]
          The array's bounding coordinates in minx, miny, maxx, maxy format.
 
+    Raises
+    ------
+    ValueError
+        If the specified kernel is invalid or resolution is greater than the maximum
+        specified radius.
+    TypeError
+        If any geometries are not a point or scale is not boolean.
+
     Examples
     --------
-    # writing result etc.
+    Writing results with rasterio:
+
+    >>> gdf = geopandas.read_file("vector_points.geojson")
+    >>> kde_array, array_bounds = geokde.kde(gdf, 1, 0.1)
+    >>> transform = rasterio.transform.from_bounds(
+        *array_bounds,
+        kde_array.shape[1],
+        kde_array.shape[0],
+    )
+
+    >>> with rasterio.open(
+        fp="raster.tif",
+        mode="w",
+        driver="GTiff",
+        width=kde_array.shape[1],
+        height=kde_array.shape[0],
+        count=1,
+        crs=gdf.crs,
+        transform=transform,
+        dtype=kde_array.dtype,
+        nodata=0.0,
+    ) as dst:
+        dst.write(kde_array, 1)
     """
     if not all(points.geometry.geom_type == "Point"):
         raise TypeError("all geometries must be points.")
-    if resolution > radius:
-        raise ValueError("resolution must be greater than radius.")
     if kernel not in VALID_KERNELS:
         raise ValueError(f"kernel must be one of {VALID_KERNELS}, not: {kernel}")
     if not isinstance(scale, bool):
         raise TypeError(f"scale must be bool, not: {type(scale)}")
     radius = validate_transform(radius, "radius", points)
     weight = validate_transform(weight, "weight", points)
+    if resolution > radius.max():
+        raise ValueError("resolution must be less than radius.")
 
     bounds = adjust_bounds(*points.total_bounds, radius.max())
     array = create_array(*bounds, resolution)

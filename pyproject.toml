@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "geokde"
 version = "0.1.0"
-description = ""
+description = "Package for geospatial kernel density estimation (KDE)."
 authors = ["Duncan Martyn <duncan.martyn@hotmail.co.uk>"]
 readme = "README.md"
 
@@ -13,7 +13,7 @@ geopandas = "^0.14.3"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.6.2"
 pytest = "^8.1.1"
-mypy = "^1.9.0"
+coverage = "^7.4.4"
 
 [build-system]
 requires = ["poetry-core"]
