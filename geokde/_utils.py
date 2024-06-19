@@ -13,9 +13,9 @@ from geokde._kernels import (
 
 
 def validate_transform(
-        arg: int | float | str,
-        arg_name: str,
-        points: gpd.GeoDataFrame | gpd.GeoSeries,
+    arg: int | float | str,
+    arg_name: str,
+    points: gpd.GeoDataFrame | gpd.GeoSeries,
 ) -> np.ndarray:
     """Validation and transformation function for weight and radius arguments.
 
@@ -62,66 +62,20 @@ def validate_transform(
     return arg
 
 
-def adjust_bounds(
-        minx: int | float,
-        miny: int | float,
-        maxx: int | float,
-        maxy: int | float,
-        radius: int | float,
-) -> list[int | float]:
-    """Calculate radius-adjusted bounds for the KDE array.
+def create_array(
+    bounds: np.ndarray,
+    radius: int | float,
+    resolution: int | float,
+) -> tuple[np.ndarray, list[int | float]]:
+    """Generate an ndarray of shape derived from bounding coordinates and spatial
+    resolution and calculate the radius- and shape-adjusted bounds thereof.
 
     Parameters
     ----------
-    minx : int | float
-        Minimum X coordinate to adjust.
-    miny : int | float
-        Minimum Y coordinate to adjust.
-    maxx : int | float
-        Maximum X coordinate to adjust.
-    maxy : int | float
-        Maximum Y coordinate to adjust.
+    bounds : numpy.ndarray
+        Bounding coordinates to adjust.
     radius : int | float
         Radius with which to adjust coordinates.
-
-    Returns
-    -------
-    minx : int | float
-        Radius-adjusted minimum X coordinate.
-    miny : int | float
-        Radius-adjusted minimum Y coordinate.
-    maxx : int | float
-        Radius-adjusted maximum X coordinate.
-    maxy : int | float
-        Radius-adjusted maximum Y coordinate.
-    """
-    minx -= radius
-    miny -= radius
-    maxx += radius
-    maxy += radius
-    return [minx, miny, maxx, maxy]
-
-
-def create_array(
-        minx: int | float,
-        miny: int | float,
-        maxx: int | float,
-        maxy: int | float,
-        resolution: int | float,
-) -> np.ndarray:
-    """Generate an ndarray of shape derived from bounding coordinates and spatial
-    resolution.
-
-    Parameters
-    ----------
-    minx : int | float
-        Minimum X coordinate for the output array.
-    miny : int | float
-        Minimum Y coordinate for the output array.
-    maxx : int | float
-        Maximum X coordinate for the output array.
-    maxy : int | float
-        Maximum Y coordinate for the output array.
     resolution : int | float
         Spatial resolution for the output array.
 
@@ -129,20 +83,27 @@ def create_array(
     -------
     array : numpy.ndarray
         Array of shape determined using bounding coordinates and resolution.
+    list[int | float]
+        List of minx, miny, maxx, and maxy bounding coordinates for the array.
     """
-    width = round((maxx - minx) / resolution)
-    height = round((maxy - miny) / resolution)
+    minx, miny, maxx, maxy = bounds
+    minx -= radius
+    maxy += radius
+    width = round((maxx + radius - minx) / resolution)
+    height = round((maxy - (miny - radius)) / resolution)
+    maxx = minx + width * resolution
+    miny = maxy - height * resolution
     array = np.full((height, width), 0.0)
-    return array
+    return array, [minx, miny, maxx, maxy]
 
 
 def get_points(
-        points: gpd.GeoDataFrame | gpd.GeoSeries,
-        minx: int | float,
-        maxy: int | float,
-        radius: np.ndarray,
-        weight: np.ndarray,
-        resolution: int | float,
+    points: gpd.GeoDataFrame | gpd.GeoSeries,
+    minx: int | float,
+    maxy: int | float,
+    radius: np.ndarray,
+    weight: np.ndarray,
+    resolution: int | float,
 ) -> np.ndarray:
     """Generate an ndarray of point X and Y array coordinates, search window radii, and
     weights.
@@ -176,10 +137,10 @@ def get_points(
 
 
 def calculate_kde(
-        points: np.ndarray,
-        array: np.ndarray,
-        kernel: str,
-        scale: bool,
+    points: np.ndarray,
+    array: np.ndarray,
+    kernel: str,
+    scale: bool,
 ) -> None:
     """Iterate over elements of an ndarray comprising point properties.
 
@@ -202,39 +163,32 @@ def calculate_kde(
     }
     # challenge to vectorise as needs to operate on >1 array element
     for point in points:
-        add_point_kde(*point, array, kernel_vfuncs[kernel])
+        add_point_kde(point, array, kernel_vfuncs[kernel])
 
 
 def add_point_kde(
-        x: int | float,
-        y: int | float,
-        window: float,
-        weight: int | float,
-        array: np.ndarray,
-        kernel_vfunc: np.vectorize,
+    point: np.ndarray,
+    array: np.ndarray,
+    kernel_vfunc: np.vectorize,
 ) -> None:
-    """Perform KDE for a given point, window, and weight, adding the result to an array.
+    """Perform KDE for a given point, adding the result to an array.
 
     Parameters
     ----------
-    x : int | float
-        Array X coordinate for a point.
-    y : int | float
-        Array Y coordinate for a point.
-    window : int | float
-        Search window radius within which to perform KDE for a point.
-    weight: int | float
-        Value with which the KDE value for a point will be weighted.
+    point : numpy.ndarray
+        Properties of the point for which KDE will be calculated, including array X and
+        Y coordinates, search window radius, and weight.
     array : numpy.ndarray
         Array to which KDE values will be added.
     kernel_vfunc : numpy.vectorize
         Vectorised kernel function with which to perform KDE.
     """
+    x, y, window, weight = point
     minx = round(x - window)
     miny = round(y - window)
     maxx = round(x + window)
     maxy = round(y + window)
-    y_idx, x_idx = np.ogrid[miny + .5:maxy + .5, minx + .5:maxx + .5]
+    y_idx, x_idx = np.ogrid[miny + 0.5 : maxy + 0.5, minx + 0.5 : maxx + 0.5]
     dist_array = np.sqrt(pow(x_idx - x, 2) + pow(y_idx - y, 2))
     kde_array = kernel_vfunc(dist_array, window, weight)
     array[miny:maxy, minx:maxx] += kde_array

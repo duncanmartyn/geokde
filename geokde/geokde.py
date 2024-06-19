@@ -3,7 +3,6 @@ import numpy as np
 
 from geokde._kernels import VALID_KERNELS
 from geokde._utils import (
-    adjust_bounds,
     calculate_kde,
     create_array,
     get_points,
@@ -12,12 +11,12 @@ from geokde._utils import (
 
 
 def kde(
-        points: gpd.GeoDataFrame | gpd.GeoSeries,
-        radius: int | float | str,
-        resolution: int | float,
-        kernel: str = "quartic",
-        weight: int | float | str = 1.0,
-        scale: bool = False,
+    points: gpd.GeoDataFrame | gpd.GeoSeries,
+    radius: int | float | str,
+    resolution: int | float,
+    kernel: str = "quartic",
+    weight: int | float | str = 1.0,
+    scale: bool = False,
 ) -> tuple[np.ndarray, list[int | float]]:
     """Estimate raw or scaled kernel density with a given radius (or radii), resolution,
     kernel, and weight(s) from point geometries in a given GeoDataFrame or GeoSeries.
@@ -91,13 +90,19 @@ def kde(
         raise ValueError(f"kernel must be one of {VALID_KERNELS}, not: {kernel}")
     if not isinstance(scale, bool):
         raise TypeError(f"scale must be bool, not: {type(scale)}")
-    radius = validate_transform(radius, "radius", points)
-    weight = validate_transform(weight, "weight", points)
-    if resolution > radius.max():
+    radius_arr = validate_transform(radius, "radius", points)
+    weight_arr = validate_transform(weight, "weight", points)
+    if resolution > radius_arr.max():
         raise ValueError("resolution must be less than radius.")
 
-    bounds = adjust_bounds(*points.total_bounds, radius.max())
-    array = create_array(*bounds, resolution)
-    points = get_points(points, bounds[0], bounds[3], radius, weight, resolution)
+    array, bounds = create_array(points.total_bounds, radius_arr.max(), resolution)
+    points = get_points(
+        points,
+        bounds[0],
+        bounds[3],
+        radius_arr,
+        weight_arr,
+        resolution,
+    )
     calculate_kde(points, array, kernel, scale)
     return array, bounds

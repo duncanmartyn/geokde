@@ -13,15 +13,15 @@ KERNEL_VFUNCS = [
 
 
 @pytest.mark.parametrize(
-        ["distance", "radius", "weight", "expected"],
-        [
-            (0, 10, 1, 1),
-            (0, 10, 2, 2),
-            (10, 10, 1, 0),
-            (20, 10, 1, 0),
-        ]
+    ["distance", "radius", "weight", "expected"],
+    [
+        (0, 10, 1, 1),
+        (0, 10, 2, 2),
+        (10, 10, 1, 0),
+        (20, 10, 1, 0),
+    ],
 )
 def test_kernel(distance, radius, weight, expected):
     for kernel_vfunc in KERNEL_VFUNCS:
         result = kernel_vfunc(distance, radius, weight)
-        assert result <= expected  # nosec
+        assert result <= expected

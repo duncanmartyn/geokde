@@ -5,24 +5,24 @@ from geokde.geokde import kde
 
 
 @pytest.mark.parametrize(
-        ["geom_type", "radius", "resolution", "kernel", "weight", "scale", "error"],
-        [
-            # all valid
-            ("points", 1, 0.1, "quartic", 1, False, None),
-            # invalid geoms
-            ("polygons", 1, 0.1, "quartic", 1, False, TypeError),
-            # invalid kernel
-            ("points", 1, 0.1, "invalid_kernel", 1, False, ValueError),
-            # invalid scale
-            ("points", 1, 0.1, "quartic", 1, "invalid_scale", TypeError),
-            # all valid, gdf column "radius" as KDE radii
-            ("points", "radius", 0.1, "quartic", 1, False, None),
-            # gdf column of type object as radii
-            ("points", "radius", 0.1, "quartic", 1, False, TypeError),
-            # incomplete gdf column as radii
-            ("points", "radius", 0.1, "quartic", 1, False, ValueError),
-            # needs test for max radius lt resolution
-        ],
+    ["geom_type", "radius", "resolution", "kernel", "weight", "scale", "error"],
+    [
+        # all valid
+        ("points", 1, 0.1, "quartic", 1, False, None),
+        # invalid geoms
+        ("polygons", 1, 0.1, "quartic", 1, False, TypeError),
+        # invalid kernel
+        ("points", 1, 0.1, "invalid_kernel", 1, False, ValueError),
+        # invalid scale
+        ("points", 1, 0.1, "quartic", 1, "invalid_scale", TypeError),
+        # all valid, gdf column "radius" as KDE radii
+        ("points", "radius", 0.1, "quartic", 1, False, None),
+        # gdf column of type object as radii
+        ("points", "radius", 0.1, "quartic", 1, False, TypeError),
+        # incomplete gdf column as radii
+        ("points", "radius", 0.1, "quartic", 1, False, ValueError),
+        # needs test for max radius lt resolution
+    ],
 )
 def test_kde(geodataframe, geom_type, radius, resolution, kernel, weight, scale, error):
     gdf = geodataframe(geom_type)
@@ -35,6 +35,6 @@ def test_kde(geodataframe, geom_type, radius, resolution, kernel, weight, scale,
             kde(gdf, radius, resolution, kernel, weight, scale)
     else:
         array, bounds = kde(gdf, radius, resolution, kernel, weight, scale)
-        assert isinstance(array, np.ndarray)  # nosec
-        assert isinstance(bounds, list)  # nosec
+        assert isinstance(array, np.ndarray)
+        assert isinstance(bounds, list)
         # TODO: more detailed assertions
