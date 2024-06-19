@@ -19,4 +19,5 @@ def geodataframe() -> Callable:
         gdf["radius"] = 1
         gdf["weight"] = 1
         return gdf
+
     return _create

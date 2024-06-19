@@ -31,9 +31,9 @@ VALID_KERNELS = [
 
 @np.vectorize
 def quartic_raw(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Raw Quartic kernel."""
     if distance < radius:
@@ -45,14 +45,16 @@ def quartic_raw(
 
 @np.vectorize
 def quartic_scaled(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Scaled Quartic kernel."""
     if distance < radius:
         norm_const = 116 / (5 * np.pi * pow(radius, 2))
-        value = weight * (norm_const * (15 / 16) * pow(1 - pow(distance / radius, 2), 2))
+        value = weight * (
+            norm_const * (15 / 16) * pow(1 - pow(distance / radius, 2), 2)
+        )
     else:
         value = 0.0
     return value
@@ -60,9 +62,9 @@ def quartic_scaled(
 
 @np.vectorize
 def epanechnikov_raw(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Raw Epanechnikov kernel."""
     if distance < radius:
@@ -74,9 +76,9 @@ def epanechnikov_raw(
 
 @np.vectorize
 def epanechnikov_scaled(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Scaled Epanechnikov kernel."""
     if distance < radius:
@@ -89,9 +91,9 @@ def epanechnikov_scaled(
 
 @np.vectorize
 def triweight_raw(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Raw triweight kernel."""
     if distance < radius:
@@ -103,14 +105,16 @@ def triweight_raw(
 
 @np.vectorize
 def triweight_scaled(
-        distance: int | float,
-        radius: int | float,
-        weight: int | float,
+    distance: int | float,
+    radius: int | float,
+    weight: int | float,
 ) -> float:
     """Scaled triweight kernel."""
     if distance < radius:
         norm_const = 128 / (35 * np.pi * pow(radius, 2))
-        value = weight * (norm_const * (35 / 32) * pow(1 - pow(distance / radius, 2), 3))
+        value = weight * (
+            norm_const * (35 / 32) * pow(1 - pow(distance / radius, 2), 3)
+        )
     else:
         value = 0.0
     return value
