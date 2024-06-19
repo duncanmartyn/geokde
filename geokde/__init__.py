@@ -1,1 +1,1 @@
-from geokde.geokde import kde
+from geokde.geokde import kde  # noqa: F401
